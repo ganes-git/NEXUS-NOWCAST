@@ -51,3 +51,6 @@ test files/
 test_results_screenshots/
 .netlify/
 */.netlify/
+.agents/
+brag-output*/
+
