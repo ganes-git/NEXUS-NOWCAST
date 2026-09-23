@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEXUS-NOWCAST | Multi-Sensor AI Thunderstorm &amp; Lightning Engine (SIH26072)</title>
+
+  <!-- Leaflet loaded first — prevents map init race -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css?v=clean_v2">
+</head>
+<body>
+
+  <!-- ── HEADER ─────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="brand-container">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <div class="brand-title-row">
+          <h1 class="brand-title">NEXUS-NOWCAST</h1>
+          <span class="agency-tag">IMD · MoES</span>
+        </div>
+        <p class="brand-subtitle">STGAT-PIE · Multi-Sensor 0–6h Nowcasting Engine · SIH26072</p>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <div class="control-group">
+        <label for="regionSelect" class="control-label">CORRIDOR</label>
+        <select id="regionSelect" class="select-input">
+          <option value="delhi_ncr">Delhi NCR</option>
+          <option value="kolkata_bay">Kolkata Bay</option>
+          <option value="chennai_coast">Chennai Coast</option>
+          <option value="mumbai_coastal">Mumbai Coastal</option>
+        </select>
+      </div>
+
+      <div class="clock-display">
+        <span class="clock-item" id="clockUtc">--:-- UTC</span>
+        <span>·</span>
+        <span class="clock-item" id="clockIst">--:-- IST</span>
+      </div>
+
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span>LIVE</span>
+      </div>
+
+      <button id="btnXaiToggle" class="btn btn-outline">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        <span>XAI</span>
+      </button>
+
+      <button id="btnDownloadCap" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>CAP XML</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── MAIN LAYOUT ────────────────────────────────────────── -->
+  <div class="app-layout">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar-panel">
+
+      <!-- Alert Card -->
+      <div class="card alert-card" id="alertSeverityCard">
+        <div class="alert-header">
+          <span>IMD METEOROLOGICAL ADVISORY</span>
+          <span class="badge" id="alertBadge">RED ALERT</span>
+        </div>
+        <div class="alert-body">
+          <h3 id="alertTitle">Severe Thunderstorm &amp; Downburst Threat</h3>
+          <p id="alertDescription">Convective supercell advancing on steering flow. Max reflectivity 56.4 dBZ.</p>
+          <div class="district-tags" id="districtTags"></div>
+        </div>
+      </div>
+
+      <!-- Convective Telemetry -->
+      <div class="card">
+        <div class="card-title">CONVECTIVE CORE TELEMETRY</div>
+        <div class="telemetry-grid">
+          <div class="telemetry-box">
+            <span class="telemetry-label">MAX REFLECTIVITY</span>
+            <span class="telemetry-value" id="valMaxDbz">56.4 <small>dBZ</small></span>
+            <span class="telemetry-sub" id="subDbz">Severe Hail / Squall</span>
+          </div>
+          <div class="telemetry-box">
+            <span class="telemetry-label">LIGHTNING JUMP</span>
+            <span class="telemetry-value text-red" id="valJump">+2.4 <small>σ</small></span>
+            <span class="telemetry-sub text-red" id="subJump">SURGE DETECTED</span>
+            <span class="ci-alert-pill" id="jumpSurgePill" style="display:none;">⚡ 2σ ACTIVE</span>
+          </div>
+          <div class="telemetry-box">
+            <span class="telemetry-label">INSAT CI PRECURSOR</span>
+            <span class="telemetry-value text-amber" id="valCi">85 <small>/ 100</small></span>
+            <span class="telemetry-sub" id="subCi">Split-Window Active</span>
+          </div>
+          <div class="telemetry-box">
+            <span class="telemetry-label">GRAPH NODES</span>
+            <span class="telemetry-value text-emerald" id="valGraphNodes">42</span>
+            <span class="telemetry-sub" id="subGraphEdges">118 Physics Edges</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lead-Time Blending -->
+      <div class="card">
+        <div class="card-title">
+          <span>DYNAMIC LEAD-TIME BLENDING</span>
+          <small id="blendingLeadLabel" style="font-family:var(--font-mono);color:var(--accent-primary);">t + 0m</small>
+        </div>
+        <p class="blending-desc">Mitigates the <strong>2-Hour Radar Wall</strong> via storm-adaptive τ blending.</p>
+        <div class="blending-bar-container">
+          <div class="blending-bar-radar" id="barRadar" style="width:100%">Radar: 100%</div>
+          <div class="blending-bar-nwp"   id="barNwp"   style="width:0%"></div>
+        </div>
+        <div class="blending-legend">
+          <span><span class="dot-radar"></span> Radar Advection</span>
+          <span><span class="dot-nwp"></span> NWP Thermodynamic CAPE</span>
+        </div>
+      </div>
+
+      <!-- INSAT-3D CI -->
+      <div class="card">
+        <div class="card-title">
+          <span>INSAT-3D PRE-RADAR CI DETECTION</span>
+          <span class="ci-alert-pill" id="ciStatusPill">MONITORING</span>
+        </div>
+        <div class="telemetry-grid">
+          <div class="telemetry-box">
+            <span class="telemetry-label">CI SCORE</span>
+            <span class="telemetry-value text-amber" id="valCiScore">85 <small>/ 100</small></span>
+            <span class="telemetry-sub" id="subCiStatus">Split-Window Active</span>
+          </div>
+          <div class="telemetry-box">
+            <span class="telemetry-label">BT COOLING</span>
+            <span class="telemetry-value text-amber" id="valBtCool">−2.1 <small>°C/15m</small></span>
+            <span class="telemetry-sub">Threshold: &lt;−1.5°C</span>
+          </div>
+          <div class="telemetry-box">
+            <span class="telemetry-label">10.8µm BT</span>
+            <span class="telemetry-value" id="valBt108">−41.2 <small>°C</small></span>
+            <span class="telemetry-sub">IR Window</span>
+          </div>
+          <div class="telemetry-box">
+            <span class="telemetry-label">LEAD TIME</span>
+            <span class="telemetry-value text-emerald" id="valCiLead">+38 <small>min</small></span>
+            <span class="telemetry-sub">Before Radar Echo</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- NWP Instability -->
+      <div class="card">
+        <div class="card-title">NWP INSTABILITY · GFS</div>
+        <div class="cape-panel">
+          <div class="cape-row">
+            <span class="cape-label">CAPE</span>
+            <span class="cape-val" id="valCape">2,840 J/kg</span>
+          </div>
+          <div class="cape-bar-track"><div class="cape-bar-fill" id="capeBar" style="width:71%"></div></div>
+          <div class="cape-row">
+            <span class="cape-label">CIN</span>
+            <span class="cape-val" id="valCin" style="color:var(--accent-red)">−42 J/kg</span>
+          </div>
+          <div class="cape-bar-track"><div class="cape-bar-fill" id="cinBar" style="width:14%;background:var(--accent-red)"></div></div>
+          <div class="cape-row" style="margin-top:6px">
+            <span class="cape-label">0–6km BULK SHEAR</span>
+            <span class="cape-val" id="valShear">28.4 kt</span>
+          </div>
+          <div class="steering-row">
+            <span class="cape-label">700hPa STEERING</span>
+            <span class="steering-arrow" id="steeringArrow">↗</span>
+            <span class="cape-val" id="valSteering">245° / 18 kt</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multiple Radars Network Mosaic Card (F-02) -->
+      <div class="card">
+        <div class="card-title">
+          <span>MULTIPLE RADARS NETWORK MOSAIC</span>
+          <span class="ci-alert-pill" id="multiRadarPill">2 DWR FUSED</span>
+        </div>
+        <div class="telemetry-grid">
+          <div class="telemetry-box" style="grid-column: span 2;">
+            <span class="telemetry-label">ACTIVE RADAR STATIONS</span>
+            <span class="telemetry-value text-emerald" style="font-size:12px;" id="valMultiRadarStations">DWR PALAM + DWR PATIALA</span>
+            <span class="telemetry-sub" id="subMultiRadarMode">Max Composite Reflectivity (Overlapping Grid)</span>
+          </div>
+          <div class="telemetry-box">
+            <span class="telemetry-label">NETWORK SITES</span>
+            <span class="telemetry-value text-emerald">37 <small>DWR</small></span>
+            <span class="telemetry-sub">IMD National Grid</span>
+          </div>
+          <div class="telemetry-box">
+            <span class="telemetry-label">BEAM MITIGATION</span>
+            <span class="telemetry-value text-emerald">ACTIVE</span>
+            <span class="telemetry-sub">Blockage Resolved</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dedicated Lightning Nowcasting & Onset Prediction Card (F-03, F-04) -->
+      <div class="card">
+        <div class="card-title">
+          <span>LIGHTNING NOWCAST &amp; ONSET</span>
+          <span class="ci-alert-pill" id="lightningOnsetAlertPill">ONSET ACTIVE</span>
+        </div>
+        <div class="telemetry-grid">
+          <div class="telemetry-box">
+            <span class="telemetry-label">ONSET LEAD TIME</span>
+            <span class="telemetry-value text-amber" id="valLightningOnsetLead">+30 <small>min</small></span>
+            <span class="telemetry-sub">Pre-Strike Advance Warning</span>
+          </div>
+          <div class="telemetry-box">
+            <span class="telemetry-label">1km STRIKE PROB</span>
+            <span class="telemetry-value text-red" id="valStrikeProb">88% <small>P(&gt;0)</small></span>
+            <span class="telemetry-sub" id="subStrikeProb">Mixed-Phase Charging</span>
+          </div>
+          <div class="telemetry-box">
+            <span class="telemetry-label">FLASH DENSITY</span>
+            <span class="telemetry-value" id="valFlashDensity">3.8 <small>fl/km²/h</small></span>
+            <span class="telemetry-sub">Forecast Lead Density</span>
+          </div>
+          <div class="telemetry-box">
+            <span class="telemetry-label">LIGHTNING JUMP</span>
+            <span class="telemetry-value text-red" id="valLightningJumpHud">+2.4 <small>σ</small></span>
+            <span class="telemetry-sub">Severe Surge Trigger</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Verification Scores -->
+      <div class="card">
+        <div class="card-title">VERIFICATION SCORES · 1h LEAD</div>
+        <div class="metrics-row">
+          <div class="metric-pill"><span class="metric-name">CSI</span><span class="metric-num">0.641</span></div>
+          <div class="metric-pill"><span class="metric-name">POD</span><span class="metric-num">0.840</span></div>
+          <div class="metric-pill"><span class="metric-name">FAR</span><span class="metric-num">0.270</span></div>
+          <div class="metric-pill"><span class="metric-name">ETS</span><span class="metric-num">0.582</span></div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- MAP PANEL -->
+    <main class="map-container">
+      <div id="map"></div>
+
+      <!-- HUD: top-right of map panel, white card, no overlap with map tiles -->
+      <div class="map-tactical-hud">
+        <div class="hud-title">
+          <span>GIS HUD</span>
+          <span style="color:var(--accent-primary)">● LIVE</span>
+        </div>
+        <div class="hud-row">
+          <span class="hud-label">DWR</span>
+          <span class="hud-val" id="hudStationName">DWR PALAM</span>
+        </div>
+        <div class="hud-row">
+          <span class="hud-label">ELEV</span>
+          <span class="hud-val">0.5° PPI</span>
+        </div>
+        <div class="hud-row">
+          <span class="hud-label">CURSOR</span>
+          <span class="hud-val" id="hudCursorCoords">28.61°N 77.20°E</span>
+        </div>
+        <div class="map-style-bar">
+          <span>MAP</span>
+          <select id="mapStyleSelect" class="map-style-select">
+            <option value="darkOsm">Standard OSM</option>
+            <option value="monoOsm">Monochrome</option>
+          </select>
+        </div>
+        <div class="hud-toggles">
+          <button id="toggleRadar"   class="btn-hud-toggle active">RADAR</button>
+          <button id="toggleTrack"   class="btn-hud-toggle active">TRACK</button>
+          <button id="toggleRings"   class="btn-hud-toggle active">RINGS</button>
+          <button id="toggleRadials" class="btn-hud-toggle active">RADIALS</button>
+        </div>
+      </div>
+
+      <!-- dBZ legend: bottom-right of map panel -->
+      <div class="radar-legend">
+        <div class="legend-header">
+          <span>Reflectivity (dBZ)</span>
+          <span style="color:var(--accent-primary);font-family:var(--font-mono)">0.5° PPI</span>
+        </div>
+        <div class="legend-bar"></div>
+        <div class="legend-labels">
+          <span>15</span><span>25</span><span>35</span><span>45</span><span>55</span><span>65+</span>
+        </div>
+      </div>
+
+      <!-- XAI toast: bottom-left, appears only when XAI is active -->
+      <div class="xai-toast" id="xaiToast" style="display:none">
+        <div class="xai-header">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <strong>XAI ACTIVE</strong>
+        </div>
+        <p id="xaiDetails">Physics-informed GAT attention edges visible on map.</p>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- ── TIMELINE ───────────────────────────────────────────── -->
+  <footer class="timeline-bar">
+    <div class="playback-controls">
+      <button id="btnPlayPause" class="btn-icon">
+        <svg id="playIcon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+      </button>
+      <div class="timeline-readout">
+        <span class="readout-label">NOWCAST LEAD</span>
+        <span class="readout-value" id="readoutValue">t + 0 min</span>
+        <span class="readout-mode" id="readoutMode">Live Radar Observation</span>
+      </div>
+    </div>
+
+    <div class="slider-wrapper">
+      <input type="range" id="timelineSlider" min="0" max="360" step="15" value="0" class="timeline-slider">
+      <div class="slider-ticks">
+        <span class="tick-mark" data-val="0">t+0m</span>
+        <span class="tick-mark" data-val="30">+30m</span>
+        <span class="tick-mark" data-val="60">+1h</span>
+        <span class="tick-mark" data-val="120">+2h ●</span>
+        <span class="tick-mark" data-val="180">+3h</span>
+        <span class="tick-mark" data-val="240">+4h</span>
+        <span class="tick-mark" data-val="360">+6h</span>
+      </div>
+    </div>
+
+    <div class="preset-buttons">
+      <button class="btn-preset active" data-min="0">Now</button>
+      <button class="btn-preset" data-min="30">+30m</button>
+      <button class="btn-preset" data-min="60">+1h</button>
+      <button class="btn-preset" data-min="120">+2h</button>
+      <button class="btn-preset" data-min="180">+3h</button>
+      <button class="btn-preset" data-min="360">+6h</button>
+    </div>
+  </footer>
+
+  <!-- CAP XML MODAL -->
+  <div class="modal-backdrop" id="capModal" style="display:none">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>NDMA / IMD — CAP v1.2 XML Alert</h3>
+        <button class="btn-close" id="btnCloseModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <pre><code id="capXmlCode">Loading XML...</code></pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btnCopyXml">Copy</button>
+        <button class="btn btn-primary" id="btnDownloadXmlFile">Download .xml</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts: Leaflet must be before app.js -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="js/app.js?v=clean_v2"></script>
+</body>
+</html>

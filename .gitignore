@@ -1,0 +1,47 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Environments & Dependencies
+.env
+.env.*
+!.env.example
+.venv/
+env/
+venv/
+ENV/
+node_modules/
+
+# IDE & Editor folders
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Logs & Databases
+*.log
+*.sqlite3
+*.db
+
+# Scratch and Temporary Test Artifacts
+scratch_figures/
+test files/
+test_results_screenshots/
+test_clean_math.pdf
+test_math.pdf
+test_segoe_math.pdf
