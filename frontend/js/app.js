@@ -140,14 +140,35 @@ function initMap() {
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
-  // 1. OpenStreetMap (OSM) Tile API - Free, open-source, no API key, no watermark
-  const osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18,
-    subdomains: ['a', 'b', 'c'],
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    crossOrigin: true
-  });
-  osmTileLayer.addTo(map);
+  // 1. High-Speed Global Edge CDN Map Tile Providers (Fastly & Cloudflare Edge Caching)
+  window.TILE_LAYERS = {
+    cartoVoyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      subdomains: ['a', 'b', 'c', 'd'],
+      attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
+      crossOrigin: true,
+      keepBuffer: 6,
+      updateWhenZooming: false
+    }),
+    cartoPositron: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      subdomains: ['a', 'b', 'c', 'd'],
+      attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
+      crossOrigin: true,
+      keepBuffer: 6,
+      updateWhenZooming: false
+    }),
+    standardOsm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      subdomains: ['a', 'b', 'c'],
+      attribution: '&copy; OpenStreetMap contributors',
+      crossOrigin: true,
+      keepBuffer: 4
+    })
+  };
+
+  currentTileLayer = window.TILE_LAYERS.cartoVoyager;
+  currentTileLayer.addTo(map);
 
   // 2. Initialize Tactical Meteorological Overlays
   baseVectorLayerGroup = L.layerGroup().addTo(map);
@@ -173,16 +194,15 @@ function initMap() {
 }
 
 /**
- * Switch Base Map Display Mode (Dark Tactical vs Monochrome Neutral)
+ * Switch Base Map Display Mode (Ultra-fast CDN Tiles)
  */
 function setBaseMapStyle(styleKey) {
-  const tilePane = document.querySelector(".leaflet-tile-pane");
-  if (!tilePane) return;
-  if (styleKey === "monoOsm") {
-    tilePane.classList.add("mono-mode");
-  } else {
-    tilePane.classList.remove("mono-mode");
+  if (currentTileLayer && map.hasLayer(currentTileLayer)) {
+    map.removeLayer(currentTileLayer);
   }
+  const nextLayer = (window.TILE_LAYERS && window.TILE_LAYERS[styleKey]) || window.TILE_LAYERS.cartoVoyager;
+  nextLayer.addTo(map);
+  currentTileLayer = nextLayer;
 }
 
 /**
@@ -391,10 +411,14 @@ function setupEventListeners() {
     });
   }
 
+  let scrubRafId = null;
   slider.addEventListener("input", (e) => {
     currentLeadTime = parseInt(e.target.value, 10);
     updateTimelineReadout(currentLeadTime);
-    fetchNowcastData(currentLeadTime);
+    if (scrubRafId) cancelAnimationFrame(scrubRafId);
+    scrubRafId = requestAnimationFrame(() => {
+      fetchNowcastData(currentLeadTime);
+    });
   });
 
   playBtn.addEventListener("click", togglePlay);
@@ -532,29 +556,40 @@ function togglePlay() {
       document.getElementById("timelineSlider").value = currentLeadTime;
       updateTimelineReadout(currentLeadTime);
       fetchNowcastData(currentLeadTime);
-    }, 1500);
+    }, 450);
   } else {
     icon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
     clearInterval(playInterval);
   }
 }
 
+let apiAvailable = null;
+
 async function fetchNowcastData(leadTimeMin) {
   let data = null;
-  try {
-    let url = (leadTimeMin === 0)
-      ? `/api/nowcast/live?region=${currentRegion}`
-      : `/api/nowcast/forecast/${leadTimeMin}?region=${currentRegion}`;
+  const isLocalhost = (typeof window !== "undefined") && 
+    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
 
-    const res = await fetch(url);
-    if (res.ok) {
-      data = await res.json();
+  // Only make network requests on local server if backend API is operational
+  if (isLocalhost && apiAvailable !== false) {
+    try {
+      let url = (leadTimeMin === 0)
+        ? `/api/nowcast/live?region=${currentRegion}`
+        : `/api/nowcast/forecast/${leadTimeMin}?region=${currentRegion}`;
+
+      const res = await fetch(url);
+      if (res.ok) {
+        data = await res.json();
+        apiAvailable = true;
+      } else {
+        apiAvailable = false;
+      }
+    } catch (err) {
+      apiAvailable = false;
     }
-  } catch (err) {
-    // API not reachable or static cloud deployment mode
   }
 
-  // Seamless fallback to high-fidelity client-side atmospheric simulation engine
+  // Instant in-memory calculation (sub-millisecond) with zero network latency
   if (!data && typeof NexusEngine !== "undefined") {
     data = NexusEngine.getNowcastSnapshot(currentRegion, leadTimeMin);
   }
@@ -832,12 +867,17 @@ function renderLayers(data) {
 async function renderXaiEdges() {
   xaiLayerGroup.clearLayers();
   let data = null;
-  try {
-    const res = await fetch(`/api/xai/attention?region=${currentRegion}`);
-    if (res.ok) {
-      data = await res.json();
-    }
-  } catch (err) {}
+  const isLocalhost = (typeof window !== "undefined") && 
+    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
+  if (isLocalhost && apiAvailable !== false) {
+    try {
+      const res = await fetch(`/api/xai/attention?region=${currentRegion}`);
+      if (res.ok) {
+        data = await res.json();
+      }
+    } catch (err) {}
+  }
 
   if (!data && typeof NexusEngine !== "undefined") {
     data = NexusEngine.getXaiAttention(currentRegion);
