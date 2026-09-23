@@ -11,7 +11,7 @@ An automated meteorological intelligence system that predicts the formation, tra
 - **Sponsoring Organization**: Ministry of Earth Sciences (MoES) / India Meteorological Department (IMD)
 - **Theme**: Disaster Management
 - **Category**: Software
-- **Team Name**: NEXUS-NOWCAST (Team ID: `SIH2026-NEXUS-72`)
+- **Team Name**: NEXUS-NOWCAST
 
 ---
 
