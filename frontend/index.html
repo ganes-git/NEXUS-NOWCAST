@@ -38,10 +38,10 @@
       <div class="control-group">
         <label for="regionSelect" class="control-label">CORRIDOR</label>
         <select id="regionSelect" class="select-input">
-          <option value="delhi_ncr">Delhi NCR</option>
-          <option value="kolkata_bay">Kolkata Bay</option>
-          <option value="chennai_coast">Chennai Coast</option>
-          <option value="mumbai_coastal">Mumbai Coastal</option>
+          <option value="delhi_ncr">Delhi NCR (Convective Supercell)</option>
+          <option value="kolkata_bay">Kolkata Bay (Kalbaishakhi / Cyclone)</option>
+          <option value="chennai_coast">Chennai Coast (Bay Cyclone Storm)</option>
+          <option value="mumbai_coastal">Mumbai Coastal (Arabian Sea Squall)</option>
         </select>
       </div>
 
@@ -381,8 +381,9 @@
     </div>
   </div>
 
-  <!-- Scripts: Leaflet must be before app.js -->
+  <!-- Scripts: Leaflet and NexusEngine must be before app.js -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="js/app.js?v=clean_v2"></script>
+  <script src="js/nexus-engine.js?v=clean_v3"></script>
+  <script src="js/app.js?v=clean_v3"></script>
 </body>
 </html>

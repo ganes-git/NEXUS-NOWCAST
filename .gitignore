@@ -49,3 +49,5 @@ scripts/
 scratch_figures/
 test files/
 test_results_screenshots/
+.netlify/
+*/.netlify/
