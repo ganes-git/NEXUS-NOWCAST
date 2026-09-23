@@ -38,10 +38,14 @@ desktop.ini
 *.sqlite3
 *.db
 
-# Scratch and Temporary Test Artifacts
+# Docs, Reports, PDFs, Pitch Decks (Only runnable product files in repo)
+*.pdf
+PRD.md
+SCHEMA.md
+TRD.md
+SIH_6_SLIDE_PITCH_DECK.md
+docs/
+scripts/
 scratch_figures/
 test files/
 test_results_screenshots/
-test_clean_math.pdf
-test_math.pdf
-test_segoe_math.pdf
