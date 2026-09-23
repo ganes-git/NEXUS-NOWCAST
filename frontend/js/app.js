@@ -140,35 +140,17 @@ function initMap() {
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
-  // 1. High-Speed Global Edge CDN Map Tile Providers (Fastly & Cloudflare Edge Caching)
-  window.TILE_LAYERS = {
-    cartoVoyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      subdomains: ['a', 'b', 'c', 'd'],
-      attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
-      crossOrigin: true,
-      keepBuffer: 6,
-      updateWhenZooming: false
-    }),
-    cartoPositron: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      subdomains: ['a', 'b', 'c', 'd'],
-      attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
-      crossOrigin: true,
-      keepBuffer: 6,
-      updateWhenZooming: false
-    }),
-    standardOsm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      subdomains: ['a', 'b', 'c'],
-      attribution: '&copy; OpenStreetMap contributors',
-      crossOrigin: true,
-      keepBuffer: 4
-    })
-  };
-
-  currentTileLayer = window.TILE_LAYERS.cartoVoyager;
-  currentTileLayer.addTo(map);
+  // 1. OpenStreetMap (OSM) - Official Open-Source Map Engine with Optimized Tile Caching
+  const osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    subdomains: ['a', 'b', 'c'],
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    crossOrigin: true,
+    keepBuffer: 8,
+    updateWhenIdle: true,
+    updateWhenZooming: false
+  });
+  osmTileLayer.addTo(map);
 
   // 2. Initialize Tactical Meteorological Overlays
   baseVectorLayerGroup = L.layerGroup().addTo(map);
@@ -194,15 +176,16 @@ function initMap() {
 }
 
 /**
- * Switch Base Map Display Mode (Ultra-fast CDN Tiles)
+ * Switch Base Map Display Mode (Standard OSM vs Monochrome OSM)
  */
 function setBaseMapStyle(styleKey) {
-  if (currentTileLayer && map.hasLayer(currentTileLayer)) {
-    map.removeLayer(currentTileLayer);
+  const tilePane = document.querySelector(".leaflet-tile-pane");
+  if (!tilePane) return;
+  if (styleKey === "monoOsm") {
+    tilePane.classList.add("mono-mode");
+  } else {
+    tilePane.classList.remove("mono-mode");
   }
-  const nextLayer = (window.TILE_LAYERS && window.TILE_LAYERS[styleKey]) || window.TILE_LAYERS.cartoVoyager;
-  nextLayer.addTo(map);
-  currentTileLayer = nextLayer;
 }
 
 /**
