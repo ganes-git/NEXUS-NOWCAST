@@ -1,5 +1,10 @@
 # NEXUS-NOWCAST
 
+[![Live Deployment](https://img.shields.io/badge/Demo-Live%20Mission%20Control%20HUD-00C7B7?style=for-the-badge&logo=netlify&logoColor=white)](https://nexus-nowcast.netlify.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+
+> 🌐 **Live Tactical Mission Control**: [https://nexus-nowcast.netlify.app](https://nexus-nowcast.netlify.app)
+
 An automated meteorological intelligence system that predicts the formation, trajectory, and severity of severe thunderstorms and lightning strikes up to 6 hours in advance by unifying multi-radar networks, geostationary satellite feeds, real-time lightning detection sensors, and numerical weather prediction models into a physics-constrained graph neural network.
 
 ---
@@ -50,26 +55,34 @@ Thunderstorms, squall lines, downbursts, and cloud-to-ground lightning claim ove
 
 ---
 
-## Quickstart & Local Setup
+## Quickstart & Access
 
-### 1. Clone the Repository
+### Option A: Instant Access (Live Cloud Deployment)
+Access the live mission control dashboard immediately with zero installation:
+- 🌐 **Live Web Application**: [https://nexus-nowcast.netlify.app](https://nexus-nowcast.netlify.app)
+
+---
+
+### Option B: Local Setup & Cold Run
+
+#### 1. Clone the Repository
 ```bash
 git clone https://github.com/ganes-git/NEXUS-NOWCAST.git
 cd NEXUS-NOWCAST
 ```
 
-### 2. Install Dependencies
+#### 2. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Launch Mission Control Server
+#### 3. Launch Mission Control Server
 ```bash
 python run_server.py
 ```
 *(Or run `uvicorn backend.main:app --port 8000 --reload`)*
 
-### 4. Access the Application
+#### 4. Access the Application
 Open your web browser and navigate to:
 ```
 http://127.0.0.1:8000
