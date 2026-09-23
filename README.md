@@ -139,14 +139,14 @@ http://127.0.0.1:8000
 
 ## Team Members
 
-| # | Name | Role | Institutional Email |
-| :---: | :--- | :--- | :--- |
-| 1 | Ganesh S | Team Lead | 25ec034@rmd.ac.in |
-| 2 | Hemavarshini M | | 25ec050@rmd.ac.in |
-| 3 | Deepika N | | 25ec020@rmd.ac.in |
-| 4 | Kavi Vadhana R | | 25ec071@rmd.ac.in |
-| 5 | Harshitha R | | 25ec047@rmd.ac.in |
-| 6 | Khavyaa D | | 25ec078@rmd.ac.in |
+| # | Name | Institutional Email |
+| :---: | :--- | :--- |
+| 1 | Ganesh S |  25ec034@rmd.ac.in |
+| 2 | Hemavarshini M |  25ec050@rmd.ac.in |
+| 3 | Deepika N |  25ec020@rmd.ac.in |
+| 4 | Kavi Vadhana R |  25ec071@rmd.ac.in |
+| 5 | Harshitha R |  25ec047@rmd.ac.in |
+| 6 | Khavyaa D |  25ec078@rmd.ac.in |
 
 ---
 
