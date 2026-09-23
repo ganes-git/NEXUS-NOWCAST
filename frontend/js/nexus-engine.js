@@ -12,48 +12,80 @@ const NexusEngine = (() => {
       name: "Delhi NCR (Indira Gandhi Int'l Airport DWR & Patiala DWR Mosaic)",
       shortName: "Delhi NCR Convective Supercell",
       center: [28.6139, 77.2090],
+      base_max_dbz: 56.8,
       primary_radar: { id: "DWR_DELHI_PALAM", name: "IMD Delhi Palam DWR" },
       secondary_radar: { id: "DWR_PATIALA_OVERLAP", name: "IMD Patiala DWR (Overlapping Northwest)" },
       districts: ["New Delhi", "North Delhi", "Ghaziabad", "Gautam Buddha Nagar (Noida)", "Meerut"],
+      districts_timeline: [
+        { maxMin: 45, list: ["Gurugram", "South Delhi", "IGI Airport (Palam)", "Dwarka"] },
+        { maxMin: 105, list: ["New Delhi", "North Delhi", "Central Delhi", "Noida Sector"] },
+        { maxMin: 180, list: ["Ghaziabad", "East Delhi", "Sahibabad", "Hapur"] },
+        { maxMin: 270, list: ["Meerut", "Modinagar", "Baghpat Rural"] },
+        { maxMin: 360, list: ["Muzaffarnagar", "Hapur East", "Moradabad Corridor"] }
+      ],
       wind_700_u: 12.5,   // m/s (West-to-East)
       wind_700_v: 6.0,    // m/s (South-to-North)
-      cape_mean: 2650.0,  // J/kg
-      cin_mean: 25.0
+      cape_mean: 2850.0,  // J/kg
+      cin_mean: 22.0
     },
     kolkata_bay: {
       name: "Kolkata (Alipore DWR & Paradeep DWR Mosaic - Kalbaishakhi / Cyclone Corridor)",
       shortName: "Kolkata Bay Kalbaishakhi / Cyclone",
       center: [22.5726, 88.3639],
+      base_max_dbz: 58.4,
       primary_radar: { id: "DWR_KOLKATA_ALIPORE", name: "IMD Kolkata Alipore DWR" },
       secondary_radar: { id: "DWR_PARADEEP_OVERLAP", name: "IMD Paradeep DWR (Overlapping Coastal)" },
       districts: ["Kolkata", "Howrah", "North 24 Parganas", "South 24 Parganas", "Hooghly"],
+      districts_timeline: [
+        { maxMin: 45, list: ["Bankura", "Purulia", "Hooghly West"] },
+        { maxMin: 105, list: ["Howrah", "Kolkata Metro", "North 24 Parganas"] },
+        { maxMin: 180, list: ["South 24 Parganas", "Diamond Harbour", "Barasat"] },
+        { maxMin: 270, list: ["Canning", "Sundarbans Coastal Belt", "Kakdwip"] },
+        { maxMin: 360, list: ["Sundarbans Marine Sector", "Bay of Bengal Offshore"] }
+      ],
       wind_700_u: 14.0,
       wind_700_v: -8.0,   // Moving SE toward Bay of Bengal
       cape_mean: 3200.0,
-      cin_mean: 15.0
+      cin_mean: 16.0
     },
     chennai_coast: {
       name: "Chennai (Meenambakkam DWR & Sriharikota DWR Mosaic - Coastal Cyclone Storm)",
       shortName: "Chennai Coast Bay Cyclone Storm",
       center: [13.0827, 80.2707],
+      base_max_dbz: 55.6,
       primary_radar: { id: "DWR_CHENNAI_MEENAMBAKKAM", name: "IMD Chennai Meenambakkam DWR" },
       secondary_radar: { id: "DWR_SRIHARIKOTA_OVERLAP", name: "IMD Sriharikota DWR (Overlapping North)" },
       districts: ["Chennai", "Chengalpattu", "Kanchipuram", "Tiruvallur"],
+      districts_timeline: [
+        { maxMin: 45, list: ["Kanchipuram", "Sriperumbudur", "Tambaram"] },
+        { maxMin: 105, list: ["Chennai City", "Meenambakkam", "Guindy", "Marina Coast"] },
+        { maxMin: 180, list: ["Tiruvallur", "Ennore Port", "North Chennai Coastal"] },
+        { maxMin: 270, list: ["Pulicat Marine Corridor", "Ponneri"] },
+        { maxMin: 360, list: ["Sriharikota Offshore Sector", "Bay of Bengal Marine"] }
+      ],
       wind_700_u: 8.0,
       wind_700_v: 10.0,
-      cape_mean: 2100.0,
-      cin_mean: 40.0
+      cape_mean: 2400.0,
+      cin_mean: 35.0
     },
     mumbai_coastal: {
       name: "Mumbai (Colaba DWR & Veravali DWR Mosaic - Arabian Sea Squall)",
       shortName: "Mumbai Coastal Arabian Sea Squall",
       center: [19.0760, 72.8777],
+      base_max_dbz: 56.4,
       primary_radar: { id: "DWR_MUMBAI_COLABA", name: "IMD Mumbai Colaba DWR" },
       secondary_radar: { id: "DWR_MUMBAI_VERAVALI", name: "IMD Mumbai Veravali DWR (Overlapping North)" },
       districts: ["Mumbai City", "Mumbai Suburban", "Thane", "Raigad"],
+      districts_timeline: [
+        { maxMin: 45, list: ["Arabian Sea Offshore Waters", "Colaba", "Marine Lines"] },
+        { maxMin: 105, list: ["Mumbai City", "Bandra", "Kurla", "Dadar"] },
+        { maxMin: 180, list: ["Mumbai Suburban", "Andheri", "Sanjay Gandhi National Park"] },
+        { maxMin: 270, list: ["Thane", "Navi Mumbai", "Kalyan-Dombivli"] },
+        { maxMin: 360, list: ["Raigad", "Panvel", "Western Ghats Windward Slopes"] }
+      ],
       wind_700_u: 16.0,
       wind_700_v: 4.0,
-      cape_mean: 2800.0,
+      cape_mean: 2900.0,
       cin_mean: 20.0
     }
   };
@@ -92,7 +124,24 @@ const NexusEngine = (() => {
     const stormCenterLat = Math.round((cLat + dLat) * 10000) / 10000;
     const stormCenterLon = Math.round((cLon + dLon) * 10000) / 10000;
 
-    // 2. Generate Multi-Radar Mosaic Superpixels
+    // 2. Convective storm life-cycle decay & evolution over 0-360m:
+    // Severe peak (t=0..45m) -> Heavy convective (t=60..135m) -> Decaying squall (t=150..255m) -> Stratiform / NWP (t=270..360m)
+    const baseDbz = reg.base_max_dbz || 56.8;
+    const decayFactor = 1.0 - (0.54 * Math.pow(leadTimeMin / 360.0, 0.88));
+    const currentMaxDbz = Math.round(baseDbz * decayFactor * 10) / 10;
+
+    // 3. Dynamic Affected District Tracking along storm steering corridor
+    let activeDistricts = reg.districts;
+    if (reg.districts_timeline) {
+      for (let segment of reg.districts_timeline) {
+        if (leadTimeMin <= segment.maxMin) {
+          activeDistricts = segment.list;
+          break;
+        }
+      }
+    }
+
+    // 4. Generate Multi-Radar Mosaic Superpixels
     const radarNodes = [];
     let nodeIdx = 1;
     const pRadar = reg.primary_radar;
@@ -105,19 +154,21 @@ const NexusEngine = (() => {
         const lon = Math.round((stormCenterLon + dlon) * 10000) / 10000;
         const distCore = Math.sqrt(dlat * dlat + dlon * dlon);
 
-        const zPrimary = Math.max(12.0, 58.0 * Math.exp(-(distCore * distCore) / 0.04));
+        const zPrimary = Math.max(10.0, currentMaxDbz * Math.exp(-(distCore * distCore) / 0.04));
         const distSecondary = Math.sqrt((dlat - 0.08) ** 2 + (dlon + 0.12) ** 2);
-        const zSecondary = Math.max(10.0, 54.0 * Math.exp(-(distSecondary * distSecondary) / 0.045));
+        const zSecondary = Math.max(8.0, (currentMaxDbz * 0.94) * Math.exp(-(distSecondary * distSecondary) / 0.045));
 
         const dbzComposite = Math.max(zPrimary, zSecondary * 0.96);
 
-        if (dbzComposite > 18.0) {
-          const assignedStation = zPrimary >= zSecondary ? pRadar.id : sRadar.id;
-          const nwpDbz = Math.max(10.0, dbzComposite * 0.9);
+        if (dbzComposite > 16.0) {
+          // Handover to secondary station as storm advects downwind
+          const isSecondaryCloser = (leadTimeMin > 150) || (distSecondary < distCore);
+          const assignedStation = isSecondaryCloser ? sRadar.id : pRadar.id;
+          const nwpDbz = Math.max(10.0, dbzComposite * 0.88);
           const finalDbzMean = (leadTimeMin === 0)
             ? Math.round(dbzComposite * 10) / 10
             : blendReflectivity(dbzComposite, nwpDbz, leadTimeMin);
-          const finalDbzMax = Math.round(Math.min(72.0, finalDbzMean + 5.5) * 10) / 10;
+          const finalDbzMax = Math.round(Math.min(72.0, finalDbzMean + 4.5) * 10) / 10;
 
           radarNodes.push({
             id: `RADAR_${reg.name.substring(0, 3)}_${String(nodeIdx).padStart(3, "0")}`,
@@ -138,23 +189,28 @@ const NexusEngine = (() => {
       }
     }
 
-    const maxDbz = radarNodes.length > 0
+    const calculatedMaxDbz = radarNodes.length > 0
       ? Math.max(...radarNodes.map(r => r.dbz_max))
-      : 20.0;
+      : currentMaxDbz;
 
-    // 3. INSAT-3D Split Window Satellite Nodes
+    // 5. INSAT-3D Split Window Satellite Nodes & Dynamic Precursor Evolution
+    const ciScore = Math.max(18, Math.round(88 * Math.exp(-leadTimeMin / 140.0)));
+    const coolingRate = Math.round((-3.2 + (leadTimeMin / 360.0) * 3.4) * 10) / 10;
+    const bt108 = Math.round((225.0 + (leadTimeMin / 360.0) * 28.0) * 10) / 10;
+    const bt120 = Math.round((bt108 + 1.8) * 10) / 10;
+    const bt67 = Math.round((bt108 + 4.5) * 10) / 10;
+    const isCiActive = (ciScore >= 60 && leadTimeMin <= 60);
+    const ciLeadTime = (leadTimeMin <= 60) ? Math.max(0, Math.round(38 - (leadTimeMin * 0.6))) : 0;
+
     const satelliteNodes = [
       { dlat: 0.1, dlon: 0.1, isCi: false },
       { dlat: -0.1, dlon: 0.15, isCi: false },
       { dlat: 0.2, dlon: -0.05, isCi: false },
-      { dlat: 0.35, dlon: 0.3, isCi: true } // Convective initiation flanking edge
+      { dlat: 0.35, dlon: 0.3, isCi: isCiActive }
     ].map((item, idx) => {
       const sla = Math.round((stormCenterLat + item.dlat) * 10000) / 10000;
       const slo = Math.round((stormCenterLon + item.dlon) * 10000) / 10000;
-      const bt108 = item.isCi ? 232.0 : 214.5;
-      const bt120 = item.isCi ? 233.8 : 216.0;
-      const bt67 = item.isCi ? 236.5 : 222.0;
-      const coolingRate = item.isCi ? -2.8 : -1.2;
+      const nodeCiScore = item.isCi ? ciScore : Math.max(15, Math.round(ciScore * 0.45));
 
       return {
         id: `SAT_INSAT3D_${String(idx + 1).padStart(2, "0")}`,
@@ -164,32 +220,50 @@ const NexusEngine = (() => {
         bt_12_0: bt120,
         bt_6_7: bt67,
         cloud_top_cooling_c_per_15m: coolingRate,
-        ci_score: item.isCi ? 85 : 40,
+        ci_score: nodeCiScore,
+        ci_lead_time_min: ciLeadTime,
         ci_evaluation: {
-          ci_alert: item.isCi,
+          ci_alert: isCiActive,
           split_window_btd: Math.round((bt108 - bt120) * 10) / 10,
           tri_spectral_btd: Math.round((bt67 - bt108) * 10) / 10,
-          confidence_pct: item.isCi ? 85 : 40
+          confidence_pct: nodeCiScore
         }
       };
     });
 
-    // 4. Lightning Strike Clusters & 2-sigma Jump
-    const isJumpActive = (leadTimeMin <= 75);
+    // 6. Lightning Strike Clusters & 2-sigma Jump Decay
+    const jumpSigma = Math.max(0.2, Math.round((2.6 * Math.exp(-leadTimeMin / 70.0)) * 10) / 10);
+    const isJumpActive = (jumpSigma >= 2.0);
+    const flashRate = Math.max(1.5, Math.round(42.0 * Math.exp(-leadTimeMin / 85.0) * 10) / 10);
+
     const lightningNodes = [
-      { dlat: 0.02, dlon: 0.03, fr: isJumpActive ? 38.5 : 18.0, isJump: isJumpActive },
-      { dlat: -0.08, dlon: 0.06, fr: 18.2, isJump: false },
-      { dlat: 0.12, dlon: 0.18, fr: 9.4, isJump: false }
+      { dlat: 0.02, dlon: 0.03, fr: flashRate, isJump: isJumpActive },
+      { dlat: -0.08, dlon: 0.06, fr: Math.round(flashRate * 0.55 * 10) / 10, isJump: false },
+      { dlat: 0.12, dlon: 0.18, fr: Math.round(flashRate * 0.3 * 10) / 10, isJump: false }
     ].map((item, idx) => ({
       id: `LIGHT_CLUST_${String(idx + 1).padStart(2, "0")}`,
       lat: Math.round((stormCenterLat + item.dlat) * 10000) / 10000,
       lon: Math.round((stormCenterLon + item.dlon) * 10000) / 10000,
       cluster_flash_rate: item.fr,
-      peak_current_ka: item.isJump ? 38.4 : 22.0,
+      peak_current_ka: item.isJump ? 38.4 : 18.0,
       is_lightning_jump: item.isJump
     }));
 
-    // 5. NWP Grid Nodes
+    // 7. NWP Grid Nodes & Environmental Energy Consumption
+    const capeValue = Math.round(reg.cape_mean - (1 - Math.exp(-leadTimeMin / 150.0)) * (reg.cape_mean * 0.58));
+    const cinValue = Math.round(-16.0 - (1 - Math.exp(-leadTimeMin / 180.0)) * 54.0);
+    const shearKt = Math.round((22.5 - (leadTimeMin / 360.0) * 8.5) * 10) / 10;
+
+    // Atmospheric steering wind veers naturally with frontal passage
+    const angleShiftDeg = (leadTimeMin / 360.0) * 25.0;
+    const speedScale = 1.0 + (leadTimeMin / 360.0) * 0.22;
+    const baseAngleRad = Math.atan2(reg.wind_700_v, reg.wind_700_u);
+    const currentAngleRad = baseAngleRad + (angleShiftDeg * Math.PI / 180);
+    const baseSpeed = Math.sqrt(reg.wind_700_u * reg.wind_700_u + reg.wind_700_v * reg.wind_700_v);
+    const currentSpeed = baseSpeed * speedScale;
+    const currentU = Math.round(currentSpeed * Math.cos(currentAngleRad) * 10) / 10;
+    const currentV = Math.round(currentSpeed * Math.sin(currentAngleRad) * 10) / 10;
+
     const nwpNodes = [
       { dlat: -0.3, dlon: -0.3, k: 0 },
       { dlat: 0.3, dlon: -0.3, k: 1 },
@@ -199,13 +273,14 @@ const NexusEngine = (() => {
       id: `NWP_WRF_${String(idx + 1).padStart(2, "0")}`,
       lat: Math.round((stormCenterLat + item.dlat) * 10000) / 10000,
       lon: Math.round((stormCenterLon + item.dlon) * 10000) / 10000,
-      cape_j_kg: reg.cape_mean + (item.k * 150),
-      shear_0_6km_mps: 22.5,
-      wind_u_700_mps: reg.wind_700_u,
-      wind_v_700_mps: reg.wind_700_v
+      cape_j_kg: capeValue + (item.k * 80),
+      cin_j_kg: cinValue,
+      shear_0_6km_mps: shearKt,
+      wind_u_700_mps: currentU,
+      wind_v_700_mps: currentV
     }));
 
-    // 6. Forecast Track Coordinates (0 to 360 min)
+    // 8. Forecast Track Coordinates (0 to 360 min)
     const forecastTrack = [0, 30, 60, 120, 180, 240, 360].map(leadStep => {
       const tSec = leadStep * 60;
       const trkDx = (reg.wind_700_u * tSec) / 1000.0;
@@ -218,8 +293,8 @@ const NexusEngine = (() => {
       ];
     });
 
-    // 7. Aerodynamic Convective Warning Polygon Swath
-    const headingRad = Math.atan2(reg.wind_700_v, reg.wind_700_u);
+    // 9. Aerodynamic Convective Warning Polygon Swath
+    const headingRad = Math.atan2(currentV, currentU);
     const rLatKm = 110.57;
     const rLonKm = 111.32 * Math.cos(stormCenterLat * Math.PI / 180);
     const alertPoly = [];
@@ -241,20 +316,20 @@ const NexusEngine = (() => {
       ]);
     }
 
-    // Determine IMD Color Code and Severity
+    // 10. Dynamic IMD Color Code & Alert Severity
     let imdColor = "GREEN";
     let severity = "Minor";
     let colorHex = "#10b981";
 
-    if (maxDbz >= 50.0 || (isJumpActive && leadTimeMin <= 60)) {
+    if (calculatedMaxDbz >= 51.0 || (isJumpActive && leadTimeMin <= 60)) {
       imdColor = "RED";
       severity = "Extreme";
       colorHex = "#ef4444";
-    } else if (maxDbz >= 40.0) {
+    } else if (calculatedMaxDbz >= 42.0) {
       imdColor = "ORANGE";
       severity = "Severe";
       colorHex = "#ff9100";
-    } else if (maxDbz >= 30.0) {
+    } else if (calculatedMaxDbz >= 31.0) {
       imdColor = "YELLOW";
       severity = "Moderate";
       colorHex = "#facc15";
@@ -269,8 +344,8 @@ const NexusEngine = (() => {
           severity: severity,
           imd_color: imdColor,
           color_hex: colorHex,
-          max_dbz: maxDbz,
-          districts: reg.districts,
+          max_dbz: calculatedMaxDbz,
+          districts: activeDistricts,
           lightning_jump: isJumpActive
         },
         geometry: {
@@ -280,26 +355,50 @@ const NexusEngine = (() => {
       }]
     };
 
-    // Lightning Onset Probability & Density
-    const strikeProb = Math.round(Math.min(0.98, Math.max(0.15, (maxDbz - 25.0) / 35.0 + (reg.cape_mean / 4000.0) * 0.4)) * 1000) / 1000;
-    const onsetAdvanceMin = (strikeProb >= 0.70 && leadTimeMin <= 60) ? 30 : 0;
-    const flashDensity = Math.round(Math.max(0.1, strikeProb * 4.5 * Math.exp(-leadTimeMin / 180.0)) * 10) / 10;
+    // 11. Lightning Onset Probability & Density Tracking
+    const strikeProb = Math.max(0.08, Math.round((0.92 * Math.exp(-leadTimeMin / 170.0)) * 100) / 100);
+    const onsetAdvanceMin = (leadTimeMin <= 45) ? Math.max(0, 35 - leadTimeMin) : 0;
+    const flashDensity = Math.max(0.1, Math.round((4.6 * Math.exp(-leadTimeMin / 140.0)) * 10) / 10);
+
+    // 12. Multiple Radar Mosaic Station Handover
+    let stationsFused = [pRadar.id, sRadar.id];
+    let mosaicMode = "Maximum Composite Reflectivity (Direct Overlap)";
+    let radarPill = "2 DWR FUSED";
+
+    if (leadTimeMin <= 90) {
+      stationsFused = [`${pRadar.id} (Primary)`, `${sRadar.id} (Overlap)`];
+      mosaicMode = "Direct Range Overlap Mosaic (Near Core)";
+      radarPill = "2 DWR FUSED";
+    } else if (leadTimeMin <= 210) {
+      stationsFused = [`${pRadar.id}`, `${sRadar.id} (Handover)`];
+      mosaicMode = "Range-Weighted Mosaic Handover Grid";
+      radarPill = "2 DWR MOSAIC";
+    } else {
+      stationsFused = [`${sRadar.id} (Dominant)`, `${pRadar.id} (Mosaic Edge)`];
+      mosaicMode = "Downwind Radar Mosaic Sector Handover";
+      radarPill = "3 DWR NETWORK";
+    }
+
+    // 13. Dynamic Graph Topology
+    const activeNodes = Math.max(24, Math.round(48 - (leadTimeMin / 360.0) * 22));
+    const activeEdges = Math.max(68, Math.round(136 - (leadTimeMin / 360.0) * 64));
 
     return {
       region: reg.name,
       region_key: regionKey,
       center: [cLat, cLon],
-      districts: reg.districts,
+      districts: activeDistricts,
       timestamp: new Date().toISOString(),
       lead_time_min: leadTimeMin,
       storm_center: [stormCenterLat, stormCenterLon],
-      max_reflectivity_dbz: maxDbz,
+      max_reflectivity_dbz: calculatedMaxDbz,
       imd_color_code: imdColor,
       severity: severity,
       multi_radar_metadata: {
-        stations_fused: [pRadar.id, sRadar.id],
+        stations_fused: stationsFused,
         network: "IMD 37-DWR National Doppler Radar Network",
-        mosaic_mode: "Maximum Composite Reflectivity with Range-Weighted Deconfliction",
+        mosaic_mode: mosaicMode,
+        pill: radarPill,
         beam_blockage_mitigation: true,
         total_radars_fused: 2,
         description: `Mosaicked from ${pRadar.name} and ${sRadar.name}`
@@ -311,20 +410,20 @@ const NexusEngine = (() => {
         ground_strike_probability: strikeProb,
         forecast_flash_density_per_km2_hr: flashDensity,
         is_lightning_jump_active: isJumpActive,
-        jump_surge_sigma: isJumpActive ? 2.6 : 0.8,
-        electrification_status: onsetAdvanceMin > 0 ? "PRE_STRIKE_ONSET_ACTIVE" : (isJumpActive ? "CRITICAL_JUMP_SURGE" : "STEADY_ELECTRIFICATION")
+        jump_surge_sigma: jumpSigma,
+        electrification_status: onsetAdvanceMin > 0 ? "PRE_STRIKE_ONSET_ACTIVE" : (isJumpActive ? "CRITICAL_JUMP_SURGE" : (calculatedMaxDbz > 35 ? "STEADY_ELECTRIFICATION" : "DISSIPATING_DISCHARGES"))
       },
       lightning_jump: {
         is_lightning_jump: isJumpActive,
-        jump_metric_sigma: isJumpActive ? 2.4 : 0.8,
-        current_rate_fpm: isJumpActive ? 38.5 : 18.0,
-        baseline_rate_fpm: 16.0,
-        confidence_score: isJumpActive ? 0.94 : 0.40
+        jump_metric_sigma: jumpSigma,
+        current_rate_fpm: flashRate,
+        baseline_rate_fpm: 14.0,
+        confidence_score: isJumpActive ? 0.94 : (calculatedMaxDbz > 35 ? 0.65 : 0.28)
       },
       forecast_track: forecastTrack,
       graph_metrics: {
-        num_nodes: radarNodes.length + satelliteNodes.length + lightningNodes.length + nwpNodes.length,
-        num_edges: 118,
+        num_nodes: activeNodes,
+        num_edges: activeEdges,
         radar_count: radarNodes.length,
         satellite_count: satelliteNodes.length,
         lightning_count: lightningNodes.length,
@@ -396,7 +495,7 @@ const NexusEngine = (() => {
       ? snapshot.alert_geojson.features[0].geometry.coordinates[0].map(pt => `${pt[1].toFixed(4)},${pt[0].toFixed(4)}`).join(" ")
       : `${reg.center[0]},${reg.center[1]}`;
 
-    const districtsStr = reg.districts.join(", ");
+    const districtsStr = snapshot.districts.join(", ");
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
@@ -418,7 +517,7 @@ const NexusEngine = (() => {
     </eventCode>
     <expires>${expiresStr}</expires>
     <headline>Severe Thunderstorm with Lightning Surges Alert for ${reg.name}</headline>
-    <description>STGAT-PIE Nowcast Engine detected intense convective storm core with reflectivity up to ${snapshot.max_reflectivity_dbz.toFixed(1)} dBZ and active 2-sigma lightning jump surge. Advancing along 700 hPa wind steering corridor.</description>
+    <description>STGAT-PIE Nowcast Engine detected convective storm core with peak reflectivity ${snapshot.max_reflectivity_dbz.toFixed(1)} dBZ (${snapshot.imd_color_code} Alert). Advancing along 700 hPa steering corridor over ${districtsStr}.</description>
     <instruction>Take shelter in sturdy pucca structures immediately. Avoid trees, metal sheds, and open agricultural fields.</instruction>
     <area>
       <areaDesc>${districtsStr}</areaDesc>

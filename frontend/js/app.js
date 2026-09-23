@@ -986,19 +986,22 @@ function updateTelemetry(data) {
     bestSat = data.satellite_nodes.reduce((prev, curr) => (curr.ci_score > prev.ci_score) ? curr : prev, data.satellite_nodes[0]);
   }
   const ciScore = bestSat ? bestSat.ci_score : 85;
-  const isCiActive = ciScore >= 70;
+  const isCiActive = ciScore >= 55 && (data.lead_time_min || 0) <= 60;
 
   if (valCi) valCi.innerHTML = `${ciScore} <small>/ 100</small>`;
   if (valCiScore) valCiScore.innerHTML = `${ciScore} <small>/ 100</small>`;
-  if (subCiStatus) subCiStatus.innerText = isCiActive ? "Rapid Cooling Active" : "Stable Cloud Deck";
+  if (subCiStatus) subCiStatus.innerText = isCiActive ? "Rapid Cooling Active" : (ciScore >= 40 ? "Mature Glaciated Cell" : "Dissipating Cloud Deck");
   if (valBtCool) valBtCool.innerHTML = `${bestSat ? bestSat.cloud_top_cooling_c_per_15m : -2.8} <small>°C/15m</small>`;
   if (valBt108) valBt108.innerHTML = `${bestSat ? (bestSat.bt_10_8 - 273.15).toFixed(1) : -41.2} <small>°C</small>`;
-  if (valCiLead) valCiLead.innerHTML = `+${isCiActive ? '38' : '0'} <small>min</small>`;
+  if (valCiLead) {
+    const ciLeadM = bestSat && bestSat.ci_lead_time_min !== undefined ? bestSat.ci_lead_time_min : (isCiActive ? 35 : 0);
+    valCiLead.innerHTML = ciLeadM > 0 ? `+${ciLeadM} <small>min</small>` : `0 <small>min</small>`;
+  }
   if (ciStatusPill) {
-    ciStatusPill.innerText = isCiActive ? "CI ACTIVE" : "STABLE";
-    ciStatusPill.style.background = isCiActive ? "var(--accent-amber-light)" : "var(--bg-surface-subtle)";
-    ciStatusPill.style.color = isCiActive ? "var(--accent-amber)" : "var(--text-muted)";
-    ciStatusPill.style.borderColor = isCiActive ? "var(--accent-amber)" : "var(--border-subtle)";
+    ciStatusPill.innerText = isCiActive ? "CI ACTIVE" : (ciScore >= 40 ? "MATURE" : "STABLE");
+    ciStatusPill.style.background = isCiActive ? "var(--accent-amber-light)" : (ciScore >= 40 ? "rgba(16, 185, 129, 0.15)" : "var(--bg-surface-subtle)");
+    ciStatusPill.style.color = isCiActive ? "var(--accent-amber)" : (ciScore >= 40 ? "var(--accent-emerald)" : "var(--text-muted)");
+    ciStatusPill.style.borderColor = isCiActive ? "var(--accent-amber)" : (ciScore >= 40 ? "var(--accent-emerald)" : "var(--border-subtle)");
   }
 
   // Graph Structure (F-01)
@@ -1016,7 +1019,10 @@ function updateTelemetry(data) {
     if (valCape) valCape.innerText = `${cape.toLocaleString()} J/kg`;
     if (capeBar) capeBar.style.width = `${Math.min(100, Math.round((cape / 4000) * 100))}%`;
 
-    if (valCin) valCin.innerText = `−32 J/kg`;
+    const cinVal = nwp.cin_j_kg !== undefined ? Math.round(nwp.cin_j_kg) : -32;
+    if (valCin) valCin.innerText = `${cinVal} J/kg`;
+    const cinBar = document.getElementById("cinBar");
+    if (cinBar) cinBar.style.width = `${Math.min(100, Math.round((Math.abs(cinVal) / 100) * 100))}%`;
 
     const shearKt = ((nwp.shear_0_6km_mps || 22.5) * 1.944).toFixed(1);
     if (valShear) valShear.innerText = `${shearKt} kt`;
@@ -1037,7 +1043,7 @@ function updateTelemetry(data) {
     const stations = data.multi_radar_metadata.stations_fused || ["DWR_PALAM", "DWR_PATIALA"];
     if (valMultiRadarStations) valMultiRadarStations.innerText = stations.join(" + ");
     if (subMultiRadarMode) subMultiRadarMode.innerText = data.multi_radar_metadata.mosaic_mode || "Max Composite Reflectivity";
-    if (multiRadarPill) multiRadarPill.innerText = `${data.multi_radar_metadata.total_radars_fused || 2} DWR FUSED`;
+    if (multiRadarPill) multiRadarPill.innerText = data.multi_radar_metadata.pill || `${data.multi_radar_metadata.total_radars_fused || 2} DWR FUSED`;
   }
 
   // Populate Lightning Nowcasting & Onset Telemetry
